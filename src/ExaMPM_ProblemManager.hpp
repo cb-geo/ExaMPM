@@ -14,6 +14,10 @@
 
 #include <ExaMPM_Mesh.hpp>
 #include <ExaMPM_ParticleInit.hpp>
+//#include <ExaMPM_DataStorage.hpp>
+//#include <ExaMPM_Materials.hpp>
+//#include <ExaMPM_TimeIntegrator.hpp>
+//#include <ExaMPM_iowriter.hpp>
 
 #include <Cabana_Core.hpp>
 
@@ -79,8 +83,32 @@ struct Mark
 
 //---------------------------------------------------------------------------//
 
-//DataStorage Class to be added here
-  
+
+// Initialize Particles from input json
+
+/*  struct ParticleInitFunc
+{
+    double _volume;
+    double _mass;
+
+    ParticleInitFunc( const double cell_size, const int ppc,
+                      const double density )
+        : _volume( cell_size * cell_size * cell_size / ppc )
+        , _mass( _volume * density )
+    {
+    }
+
+    template <class ParticleType>
+    KOKKOS_INLINE_FUNCTION bool operator()( const double x[3],
+    ParticleType& p ) const */
+
+      
+// DataStorage Initialization to be added 
+
+
+// Initialize material properties from input json
+
+     
 template <class MemorySpace>
 class ProblemManager
 {
@@ -155,9 +183,9 @@ class ProblemManager
 
     const std::shared_ptr<mesh_type>& mesh() const { return _mesh; }
 
-    double bulkModulus() const { return _bulk_modulus; }
+    double bulkModulus() const { return _bulk_modulus; } // Move to Materials? 
 
-    double density() const { return _rho; }
+    double density() const { return _rho; } // Move to Materials?
 
     double gamma() const { return _gamma; }
 
