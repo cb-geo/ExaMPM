@@ -1,0 +1,71 @@
+{
+  "title": "Dam Break Example JSON Input for ExaMPM",
+  "mesh": {
+    "mesh": "mesh-3d.txt",
+    "entity_sets": "entity_sets.json",
+    "boundary_conditions": {
+        "velocity_constraints": [
+            {
+                "nset_id" : 0,
+                "dir": 0,
+                "velocity": 0.00
+            },
+            {
+                "nset_id" : 1,
+                "dir": 1,
+                "velocity": 0.00
+            }
+        ],
+        "friction_constraints": [
+            {
+                "nset_id" : 1,
+                "dir": 1,
+                "sign_n": -1,
+                "friction": 0.5
+            }
+        ],
+    },
+    "particles_stresses": "particles-stresses.txt",
+    "cell_type": "ED3H8",
+    "io_type": "Ascii3D",
+    "node_type": "N3D"
+  },
+
+  "materials": [
+    {
+      "id": 0,
+      "density": 1000.0,
+      "poisson_ratio": 0
+      "type": "LinearElastic3D",
+      "youngs_modulus": 0
+    }
+  ],
+  "material_sets": [
+    {
+      "material_id": 0,
+    }
+  ],
+    ],
+    "gravity": [0.0, -9.81],
+    ]
+  },
+  ],
+  "analysis": {
+    "type": "MPMExplicit3D",
+    "dt": 1.0E-5,
+    "uuid": "Dam_Break",
+    "nsteps": 10,
+      
+  },
+  "post_processing": {
+    "output_steps": 5,
+    "path": "results/",
+    "vtk" : ["stresses","velocities"],
+    "vtk_statevars": [
+      {
+        "phase_id": 0,
+        "statevars" : ["pdstrain"]
+      }
+    ]
+  }
+}
