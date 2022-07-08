@@ -54,9 +54,14 @@ void p2g( const ExecutionSpace& exec_space, const ProblemManagerType& pm )
     auto mu_i_sv = Kokkos::Experimental::create_scatter_view( mu_i );
     auto f_i_sv = Kokkos::Experimental::create_scatter_view( f_i );
 
-    // Get the fluid properties.
+    // Get the material  properties.
+    // Needs to allow for more than just the fluid properties
+    //Needs to allow for changing set of preoperties based on material model indicated
+    /* Dam Break Properties 
     double bulk_mod = pm.bulkModulus();
-    double gamma = pm.gamma();
+    double gamma = pm.gamma(); */
+    
+    // Properties needed for a Linear Elastic Model 
 
     // Build the local mesh.
     auto local_mesh =
@@ -76,8 +81,11 @@ void p2g( const ExecutionSpace& exec_space, const ProblemManagerType& pm )
 
             // Compute the pressure on the particle with an equation of
             // state.
+	    //Will this be changed for Linear Elastic??
             double pressure = -bulk_mod * ( pow( j_p( p ), -gamma ) - 1.0 );
 
+            //Equation for Linear Elastic pressure equation of state 
+	    
             // Project the pressure gradient to the grid.
             Cajita::P2G::gradient( -v_p( p ) * j_p( p ) * pressure, sd,
                                    f_i_sv );
@@ -278,9 +286,17 @@ void correctParticlePositions( const ExecutionSpace& exec_space,
     // Create the scatter views we need.
     auto x_i_sv = Kokkos::Experimental::create_scatter_view( x_i );
 
+
+    // Get the material  properties.
+    // Needs to allow for more than just the fluid properties
+    //Needs to allow for changing set of preoperties based on material model indicated
+    
+    /* Dam Break Properties 
     // Get the fluid properties.
     double kappa = pm.kappa();
-    double density = pm.density();
+    double density = pm.density(); */
+    
+    // Properties needed for a Linear Elastic Model 
 
     // Build the local mesh.
     auto local_mesh =
@@ -308,6 +324,9 @@ void correctParticlePositions( const ExecutionSpace& exec_space,
                              : fmax( r_c( i, j, k, 0 ), density );
 
             // Compute correction.
+	    //Find formula for position correction
+	    // Is kappa needed for all material models???
+	    // Linear Elastic Correction??
             double correction =
                 -delta_t * delta_t * kappa * ( 1 - rho / density ) / density;
             Cajita::P2G::gradient( correction, sd_i, x_i_sv );
