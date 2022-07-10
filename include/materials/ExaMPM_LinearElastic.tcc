@@ -12,6 +12,11 @@ ExaMPM::LinearElastic<Tdim>::LinearElastic(unsigned id,
         material_properties.at("youngs_modulus").template get<double>();
     poisson_ratio_ =
         material_properties.at("poisson_ratio").template get<double>();
+    // Added from ExaMPM
+    gamma =
+    	material_properties.at("gamma").template get<double>();
+    kappa =
+    	material_properties.at("kappa").template get<double>()
 
     // Calculate bulk modulus
     bulk_modulus_ = youngs_modulus_ / (3.0 * (1. - 2. * poisson_ratio_));

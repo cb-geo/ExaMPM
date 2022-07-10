@@ -15,6 +15,7 @@
 #include <ExaMPM_BoundaryConditions.hpp>
 #include <ExaMPM_ProblemManager.hpp>
 #include <ExaMPM_VelocityInterpolation.hpp>
+#include <ExaMPM_Material.hpp>
 
 #include <Cajita.hpp>
 
@@ -60,9 +61,11 @@ void p2g( const ExecutionSpace& exec_space, const ProblemManagerType& pm )
     /* Dam Break Properties 
     double bulk_mod = pm.bulkModulus();
     double gamma = pm.gamma(); */
-    
-    // Properties needed for a Linear Elastic Model 
+    // Bring in Properties for any general material
+    // ExaMPM::Material::properties_
+    // Might be better to have materials and property calculations all moved to materials class 
 
+    
     // Build the local mesh.
     auto local_mesh =
         Cajita::createLocalMesh<ExecutionSpace>( *( pm.mesh()->localGrid() ) );
@@ -81,10 +84,12 @@ void p2g( const ExecutionSpace& exec_space, const ProblemManagerType& pm )
 
             // Compute the pressure on the particle with an equation of
             // state.
-	    //Will this be changed for Linear Elastic??
-            double pressure = -bulk_mod * ( pow( j_p( p ), -gamma ) - 1.0 );
+	    // Will be done in materials class where material properties is stored
+	    // Stress --> pressure --> time integrator project to grid 
+	    // double pressure = -bulk_mod * ( pow( j_p( p ), -gamma ) - 1.0 );
 
-            //Equation for Linear Elastic pressure equation of state 
+	    //ExaMPM::Materials::pressure 
+	    
 	    
             // Project the pressure gradient to the grid.
             Cajita::P2G::gradient( -v_p( p ) * j_p( p ) * pressure, sd,
@@ -324,11 +329,12 @@ void correctParticlePositions( const ExecutionSpace& exec_space,
                              : fmax( r_c( i, j, k, 0 ), density );
 
             // Compute correction.
-	    //Find formula for position correction
-	    // Is kappa needed for all material models???
-	    // Linear Elastic Correction??
-            double correction =
-                -delta_t * delta_t * kappa * ( 1 - rho / density ) / density;
+	    // Gamma and Kappa moved to materials class
+	    // double correction =
+            //    -delta_t * delta_t * kappa * ( 1 - rho / density ) / density;
+
+	    //ExaMPM::Material::correction 
+	    
             Cajita::P2G::gradient( correction, sd_i, x_i_sv );
         } );
 

@@ -1,22 +1,22 @@
-#ifndef MPM_MATERIAL_MATERIAL_H_
-#define MPM_MATERIAL_MATERIAL_H_
+#ifndef EXAMPM_MATERIAL_MATERIAL_H_
+#define EXAMPM_MATERIAL_MATERIAL_H_
 
 #include <limits>
 
-#include "Eigen/Dense"
+#include "Eigen/Dense" // Will eigen be needed at all?
 #include "json.hpp"
 
 #include "factory.h"
 #include "logger.h"
 #include "map.h"
 #include "material_utility.h"
-#include "particle.h"
+#include "particle.h" 
 #include "particle_base.h"
 
 // JSON
 using Json = nlohmann::json;
 
-namespace mpm {
+namespace ExaMPM {
 
 // Forward declaration of ParticleBase
 template <unsigned Tdim>
@@ -26,7 +26,9 @@ class ParticleBase;
 //! \brief Base class that stores the information about materials
 //! \details Material class stresses and strains
 //! \tparam Tdim Dimension
-template <unsigned Tdim>
+
+// Data needs to live in ExaMPM_ProblemManager 
+template <unsigned Tdim> 
 class Material {
  public:
   //! Define a vector of 6 dof
@@ -62,7 +64,8 @@ class Material {
   Ttype property(const std::string& key);
 
   //! Initialise history variables
-  virtual mpm::dense_map initialise_state_variables() = 0;
+  // Will need to change dense_map function to match what is in ExaMPM
+  virtual ExaMPM::dense_map initialise_state_variables() = 0;
 
   //! State variables
   virtual std::vector<std::string> state_variables() const = 0;
@@ -76,8 +79,20 @@ class Material {
   virtual Vector6d compute_stress(const Vector6d& stress,
                                   const Vector6d& dstrain,
                                   const ParticleBase<Tdim>* ptr,
-                                  mpm::dense_map* state_vars) = 0;
+                                  ExaMPM::dense_map* state_vars) = 0;
 
+  // Compute pressure (Moved from ExaMPM - Time Integrator)
+  // double pressure = -bulk_modulus * ( pow( j_p( p ), -gamma ) - 1.0 );
+  double pressure(ExaMPM::dense_map* state_vars)
+
+  
+  // Compute Position Correction (Moved from ExaMPM - Time Integrator)
+  // rho and delta_t - rho is calculated in Time Integrator. Maybe needs to move back?? 
+  // double correction = -delta_t * delta_t * kappa * ( 1 - rho / density ) / density;
+    double correction(ExaMPM::dense_map* state_var, ExaMPM::TimeIntegrator::rho) 
+
+
+  
  protected:
   //! material id
   unsigned id_{std::numeric_limits<unsigned>::max()};
@@ -88,6 +103,6 @@ class Material {
 };  // Material class
 }  // namespace mpm
 
-#include "material.tcc"
+#include "ExaMPM_Material.tcc"
 
-#endif  // MPM_MATERIAL_MATERIAL_H_
+#endif  // EXAMPM_MATERIAL_MATERIAL_H_

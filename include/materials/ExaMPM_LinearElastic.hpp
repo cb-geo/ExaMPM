@@ -5,9 +5,9 @@
 
 #include "Eigen/Dense"
 
-#include "material.h"
+#include "ExaMPM_Material.hpp"
 
-namespace mpm {
+namespace ExaMPM {
 
 //! LinearElastic class
 //! \brief Linear Elastic material model
@@ -36,8 +36,8 @@ class LinearElastic : public Material<Tdim> {
 
   //! Initialise history variables
   //! \retval state_vars State variables with history
-  mpm::dense_map initialise_state_variables() override {
-    mpm::dense_map state_vars;
+  ExaMPM::dense_map initialise_state_variables() override {
+    ExaMPM::dense_map state_vars;
     return state_vars;
   }
 
@@ -52,8 +52,18 @@ class LinearElastic : public Material<Tdim> {
   //! \retval updated_stress Updated value of stress
   Vector6d compute_stress(const Vector6d& stress, const Vector6d& dstrain,
                           const ParticleBase<Tdim>* ptr,
-                          mpm::dense_map* state_vars) override;
+                          ExaMPM::dense_map* state_vars) override;
 
+  // Compute pressure (Moved from ExaMPM - Time Integrator)
+  // double pressure = -bulk_modulus * ( pow( j_p( p ), -gamma ) - 1.0 );
+  double pressure(ExaMPM::dense_map* state_vars)
+
+  
+  // Compute Position Correction (Moved from ExaMPM - Time Integrator)
+  // rho and delta_t - rho is calculated in Time Integrator. Maybe needs to move back?? 
+  // double correction = -delta_t * delta_t * kappa * ( 1 - rho / density ) / density;
+    double correction(ExaMPM::dense_map* state_var, ExaMPM::TimeIntegrator::rho) 
+  
  protected:
   //! material id
   using Material<Tdim>::id_;
@@ -81,9 +91,13 @@ class LinearElastic : public Material<Tdim> {
   double vp_{std::numeric_limits<double>::max()};
   //! Shear Wave Velocity
   double vs_{std::numeric_limits<double>::max()};
+  //! Gamma - ExaMPM
+  double gamma_{std::numeric_limits<double>::max()};
+  //! Kappa - ExaMPM
+  double kappa_{std::numeric_limits<double>::max()};
 };  // LinearElastic class
-}  // namespace mpm
+}  // namespace ExaMPM
 
-#include "linear_elastic.tcc"
+#include "ExaMPM_LinearElastic.tcc"
 
-#endif  // MPM_MATERIAL_LINEAR_ELASTIC_H_
+#endif  // EXAMPM_MATERIAL_LINEAR_ELASTIC_H_
