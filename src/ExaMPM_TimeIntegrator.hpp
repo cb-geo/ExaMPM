@@ -269,118 +269,6 @@ void g2p( const ExecutionSpace& exec_space, const ProblemManagerType& pm,
     pm.scatter( Location::Cell(), Field::Mark() );
 }
 
-//---------------------------------------------------------------------------//
-// Correct particle positions.
-template <class ProblemManagerType, class ExecutionSpace>
-void correctParticlePositions( const ExecutionSpace& exec_space,
-                               const ProblemManagerType& pm,
-                               const double delta_t,
-                               const BoundaryCondition& bc )
-{
-    // Get the particle data we need.
-    auto x_p = pm.get( Location::Particle(), Field::Position() );
-
-    // Get the views we need.
-    auto r_c = pm.get( Location::Cell(), Field::Density() );
-    auto k_c = pm.get( Location::Cell(), Field::Mark() );
-    auto x_i = pm.get( Location::Node(), Field::PositionCorrection() );
-
-    // Reset write views.
-    Kokkos::deep_copy( x_i, 0.0 );
-
-    // Create the scatter views we need.
-    auto x_i_sv = Kokkos::Experimental::create_scatter_view( x_i );
-
-
-    // Get the material  properties.
-    // Needs to allow for more than just the fluid properties
-    //Needs to allow for changing set of preoperties based on material model indicated
-    
-    /* Dam Break Properties 
-    // Get the fluid properties.
-    double kappa = pm.kappa();
-    double density = pm.density(); */
-    
-    // Properties needed for a Linear Elastic Model 
-
-    // Build the local mesh.
-    auto local_mesh =
-        Cajita::createLocalMesh<ExecutionSpace>( *( pm.mesh()->localGrid() ) );
-
-    // Compute nodal correction.
-    auto local_cells = pm.mesh()->localGrid()->indexSpace(
-        Cajita::Own(), Cajita::Cell(), Cajita::Local() );
-    Kokkos::parallel_for(
-        "compute_position_correction",
-        Cajita::createExecutionPolicy( local_cells, exec_space ),
-        KOKKOS_LAMBDA( const int i, const int j, const int k ) {
-            // Get the cell center.
-            int idx[3] = { i, j, k };
-            double x[3];
-            local_mesh.coordinates( Cajita::Cell(), idx, x );
-
-            // Setup interpolation from cell center to nodes.
-            Cajita::SplineData<double, 1, 3, Cajita::Node> sd_i;
-            Cajita::evaluateSpline( local_mesh, x, sd_i );
-
-            // Clamp the density outside the fluid.
-            double rho = ( k_c( i, j, k, 0 ) > 0.0 )
-                             ? r_c( i, j, k, 0 )
-                             : fmax( r_c( i, j, k, 0 ), density );
-
-            // Compute correction.
-	    // Gamma and Kappa moved to materials class
-	    // double correction =
-            //    -delta_t * delta_t * kappa * ( 1 - rho / density ) / density;
-
-	    //ExaMPM::Material::correction 
-	    
-            Cajita::P2G::gradient( correction, sd_i, x_i_sv );
-        } );
-
-    // Complete local scatter.
-    Kokkos::Experimental::contribute( x_i, x_i_sv );
-
-    // Complete global scatter.
-    pm.scatter( Location::Node(), Field::PositionCorrection() );
-
-    // Gather the position correction.
-    pm.gather( Location::Node(), Field::PositionCorrection() );
-
-    // Apply boundary condition to position correction.
-    // Compute the velocity.
-    auto l2g = Cajita::IndexConversion::createL2G( *( pm.mesh()->localGrid() ),
-                                                   Cajita::Node() );
-    auto local_nodes = pm.mesh()->localGrid()->indexSpace(
-        Cajita::Ghost(), Cajita::Node(), Cajita::Local() );
-    Kokkos::parallel_for(
-        Cajita::createExecutionPolicy( local_nodes, exec_space ),
-        KOKKOS_LAMBDA( const int li, const int lj, const int lk ) {
-            int gi, gj, gk;
-            l2g( li, lj, lk, gi, gj, gk );
-            bc( gi, gj, gk, x_i( li, lj, lk, 0 ), x_i( li, lj, lk, 1 ),
-                x_i( li, lj, lk, 2 ) );
-        } );
-
-    // Update particle positions.
-    Kokkos::parallel_for(
-        "correct_particles",
-        Kokkos::RangePolicy<ExecutionSpace>( exec_space, 0, pm.numParticle() ),
-        KOKKOS_LAMBDA( const int p ) {
-            // Get the particle position.
-            double x[3] = { x_p( p, 0 ), x_p( p, 1 ), x_p( p, 2 ) };
-
-            // Setup interpolation from the nodes.
-            Cajita::SplineData<double, 2, 3, Cajita::Node> sd_i;
-            Cajita::evaluateSpline( local_mesh, x, sd_i );
-
-            // Correct the particle position.
-            double delta_x[3];
-            Cajita::G2P::value( x_i, sd_i, delta_x );
-            for ( int d = 0; d < 3; ++d )
-                x_p( p, d ) += delta_x[d];
-        } );
-}
 
 //---------------------------------------------------------------------------//
 // Take a time step.
@@ -392,7 +280,6 @@ void step( const ExecutionSpace& exec_space, const ProblemManagerType& pm,
     p2g( exec_space, pm );
     fieldSolve( exec_space, pm, delta_t, gravity, bc );
     g2p( exec_space, pm, delta_t );
-    correctParticlePositions( exec_space, pm, delta_t, bc );
 }
 
 //---------------------------------------------------------------------------//
