@@ -147,7 +147,7 @@ int main(int argc, char* argv[]) {
     auto ExaMPM  = ExaMPM::createSolver(
         device, MPI_COMM_WORLD, global_box, global_num_cell, periodic,
         partitioner, halo_size, ParticleInitFunc( cell_size, ppc, density ),
-        ppc, bulk_modulus, density, gamma, kappa, delta_t, gravity, bc );
+        ppc, //json& properties);
    solver->solve( t_final, write_freq );
 
     //Solve (Run the problem).                                                              
