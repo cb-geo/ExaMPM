@@ -55,15 +55,10 @@ void p2g( const ExecutionSpace& exec_space, const ProblemManagerType& pm )
     auto mu_i_sv = Kokkos::Experimental::create_scatter_view( mu_i );
     auto f_i_sv = Kokkos::Experimental::create_scatter_view( f_i );
 
-    // Get the material  properties.
-    // Needs to allow for more than just the fluid properties
-    //Needs to allow for changing set of preoperties based on material model indicated
-    /* Dam Break Properties 
-    double bulk_mod = pm.bulkModulus();
-    double gamma = pm.gamma(); */
+   
     // Bring in Properties for any general material
-    // ExaMPM::Material::properties_
     // Might be better to have materials and property calculations all moved to materials class 
+    // ExaMPM::Material::properties_
 
     
     // Build the local mesh.
@@ -84,13 +79,12 @@ void p2g( const ExecutionSpace& exec_space, const ProblemManagerType& pm )
 
             // Compute the pressure on the particle with an equation of
             // state.
+	    // Chnage to general stress/strain for soil models
 	    // Will be done in materials class where material properties is stored
 	    // Stress --> pressure --> time integrator project to grid 
-	    // double pressure = -bulk_mod * ( pow( j_p( p ), -gamma ) - 1.0 );
-
-	    //ExaMPM::Materials::pressure 
+            //ExaMPM::Materials::pressure 
 	    
-	    
+	    // Change to stress/strain!!
             // Project the pressure gradient to the grid.
             Cajita::P2G::gradient( -v_p( p ) * j_p( p ) * pressure, sd,
                                    f_i_sv );

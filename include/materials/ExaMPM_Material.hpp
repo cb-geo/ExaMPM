@@ -81,18 +81,7 @@ class Material {
                                   const ParticleBase<Tdim>* ptr,
                                   ExaMPM::dense_map* state_vars) = 0;
 
-  // Compute pressure (Moved from ExaMPM - Time Integrator)
-  // double pressure = -bulk_modulus * ( pow( j_p( p ), -gamma ) - 1.0 );
-  double pressure(ExaMPM::dense_map* state_vars)
-
-  
-  // Compute Position Correction (Moved from ExaMPM - Time Integrator)
-  // rho and delta_t - rho is calculated in Time Integrator. Maybe needs to move back?? 
-  // double correction = -delta_t * delta_t * kappa * ( 1 - rho / density ) / density;
-    double correction(ExaMPM::dense_map* state_var, ExaMPM::TimeIntegrator::rho) 
-
-
-  
+ 
  protected:
   //! material id
   unsigned id_{std::numeric_limits<unsigned>::max()};
