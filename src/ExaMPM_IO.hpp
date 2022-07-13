@@ -73,7 +73,7 @@ class IO {
   //std::string output_folder() const;
 
   //! Working directory
-  //std::string working_dir() const { return working_dir_; }
+   std::string working_dir() const { return working_dir_; }
 
   //! Create output VTK file names (eg. velocity0000*.vtk)
   //! Generates a file based on attribute, current step and maxsteps
@@ -93,7 +93,7 @@ class IO {
   //! Number of parallel threads
   //unsigned nthreads_{0};
   //! Working directory
-  //std::string working_dir_;
+  std::string working_dir_;
   //! Input file name
   std::string input_file_{"mpm.json"};
   //! Input JSON object
@@ -103,4 +103,4 @@ class IO {
 };
 
 }  // namespace ExaMPM
-#endif  // MPM_IO_H_
+#endif  // EXAMPM_IO_H_
