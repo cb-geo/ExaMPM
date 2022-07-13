@@ -30,7 +30,7 @@ namespace TimeIntegrator
 //---------------------------------------------------------------------------//
 // Particle-to-grid.
 template <class ProblemManagerType, class ExecutionSpace>
-void p2g( const ExecutionSpace& exec_space, const ProblemManagerType& pm )
+void p2g( const ExecutionSpace& exec_space, const ProblemManagerType& pm, const MaterialProperties& properties)
 {
     // Get the particle data we need.
     auto m_p = pm.get( Location::Particle(), Field::Mass() );
@@ -44,6 +44,7 @@ void p2g( const ExecutionSpace& exec_space, const ProblemManagerType& pm )
     auto m_i = pm.get( Location::Node(), Field::Mass() );
     auto mu_i = pm.get( Location::Node(), Field::Momentum() );
     auto f_i = pm.get( Location::Node(), Field::Force() );
+    // Additonal view might be need for node acceleration
 
     // Reset write views.
     Kokkos::deep_copy( m_i, 0.0 );
@@ -55,12 +56,6 @@ void p2g( const ExecutionSpace& exec_space, const ProblemManagerType& pm )
     auto mu_i_sv = Kokkos::Experimental::create_scatter_view( mu_i );
     auto f_i_sv = Kokkos::Experimental::create_scatter_view( f_i );
 
-   
-    // Bring in Properties for any general material
-    // Might be better to have materials and property calculations all moved to materials class 
-    // ExaMPM::Material::properties_
-
-    
     // Build the local mesh.
     auto local_mesh =
         Cajita::createLocalMesh<ExecutionSpace>( *( pm.mesh()->localGrid() ) );
@@ -77,32 +72,34 @@ void p2g( const ExecutionSpace& exec_space, const ProblemManagerType& pm )
             Cajita::SplineData<double, 2, 3, Cajita::Node> sd;
             Cajita::evaluateSpline( local_mesh, x, sd );
 
-            // Compute the pressure on the particle with an equation of
-            // state.
-	    // Chnage to general stress/strain for soil models
-	    // Will be done in materials class where material properties is stored
-	    // Stress --> pressure --> time integrator project to grid 
-            //ExaMPM::Materials::pressure 
-	    
-	    // Change to stress/strain!!
-            // Project the pressure gradient to the grid.
-            Cajita::P2G::gradient( -v_p( p ) * j_p( p ) * pressure, sd,
-                                   f_i_sv );
 
-            // Extract the particle velocity
+            // Project mass to the grid. 
+            Cajita::P2G::value( m_p( p ), sd, m_i_sv );
+
+	    //Calculate nodal forces
+            /*Cajita::P2G::gradient( -v_p( p ) * j_p( p ) * pressure, sd,
+	      f_i_sv );*/
+
+	    //Calculate nodal acceleration
+
+
+	   
+	    // Extract the particle velocity
             double vel_p[3] = { u_p( p, 0 ), u_p( p, 1 ), u_p( p, 2 ) };
 
             // Extract the affine particle matrix.
             double aff_p[3][3];
             for ( int d0 = 0; d0 < 3; ++d0 )
                 for ( int d1 = 0; d1 < 3; ++d1 )
-                    aff_p[d0][d1] = B_p( p, d0, d1 );
+		aff_p[d0][d1] = B_p( p, d0, d1 );
 
-            // Project momentum to the grid.
+	    // Update particle velocity based on nodal accleration 
+	    
+
+            //Update and  Project momentum to the grid.
             APIC::p2g( m_p( p ), vel_p, aff_p, sd, mu_i_sv );
 
-            // Project mass to the grid.
-            Cajita::P2G::value( m_p( p ), sd, m_i_sv );
+           
         } );
 
     // Complete local scatter.
@@ -118,6 +115,7 @@ void p2g( const ExecutionSpace& exec_space, const ProblemManagerType& pm )
 
 //---------------------------------------------------------------------------//
 // Field solve.
+// Update nodal velocity and displacement 
 template <class ProblemManagerType, class ExecutionSpace>
 void fieldSolve( const ExecutionSpace& exec_space, const ProblemManagerType& pm,
                  const double delta_t, const double gravity,
@@ -135,7 +133,7 @@ void fieldSolve( const ExecutionSpace& exec_space, const ProblemManagerType& pm,
     // Node mass epsilon. Masses smaller than this will be ignored.
     double mass_epsilon = 1.0e-12;
 
-    // Compute the velocity.
+    // Compute the velocity at the node
     auto l2g = Cajita::IndexConversion::createL2G( *( pm.mesh()->localGrid() ),
                                                    Cajita::Node() );
     auto local_nodes = pm.mesh()->localGrid()->indexSpace(
@@ -167,11 +165,15 @@ void fieldSolve( const ExecutionSpace& exec_space, const ProblemManagerType& pm,
             // Apply the boundary condition.
             bc( gi, gj, gk, u_i( li, lj, lk, 0 ), u_i( li, lj, lk, 1 ),
                 u_i( li, lj, lk, 2 ) );
+
+	    //Calculate nodal displacement 
         } );
 }
 
 //---------------------------------------------------------------------------//
 // Grid-to-particle.
+// Stress/Strain
+//Constituative model 
 template <class ProblemManagerType, class ExecutionSpace>
 void g2p( const ExecutionSpace& exec_space, const ProblemManagerType& pm,
           const double delta_t )
@@ -218,7 +220,8 @@ void g2p( const ExecutionSpace& exec_space, const ProblemManagerType& pm,
             Cajita::SplineData<double, 2, 3, Cajita::Node> sd_i;
             Cajita::evaluateSpline( local_mesh, x, sd_i );
 
-            // Update particle velocity.
+	    // Should this all be earlier? 
+	    /* // Update particle velocity.
             double vel_p[3];
             double aff_p[3][3];
             APIC::g2p( u_i, sd_i, vel_p, aff_p );
@@ -226,16 +229,24 @@ void g2p( const ExecutionSpace& exec_space, const ProblemManagerType& pm,
                 u_p( p, d ) = vel_p[d];
             for ( int d0 = 0; d0 < 3; ++d0 )
                 for ( int d1 = 0; d1 < 3; ++d1 )
-                    B_p( p, d0, d1 ) = aff_p[d0][d1];
+		  B_p( p, d0, d1 ) = aff_p[d0][d1]; //EDIT
 
             // Compute the velocity divergence (this is the trace of the
             // velocity gradient).
+	    //EDIT
             double div_u;
-            Cajita::G2P::divergence( u_i, sd_i, div_u );
+            Cajita::G2P::divergence( u_i, sd_i, div_u );*/
+
+
+	    //Compute Strain
+	    //Compute Stress
 
             // Update the deformation gradient determinant.
             j_p( p ) *= exp( delta_t * div_u );
 
+
+            //Update volume and mass of partcles 
+	    
             // Move the particle
             for ( int d = 0; d < 3; ++d )
             {
@@ -269,9 +280,9 @@ void g2p( const ExecutionSpace& exec_space, const ProblemManagerType& pm,
 template <class ProblemManagerType, class ExecutionSpace>
 void step( const ExecutionSpace& exec_space, const ProblemManagerType& pm,
            const double delta_t, const double gravity,
-           const BoundaryCondition& bc )
+           const BoundaryCondition& bc, const MaterialProperties& properties )
 {
-    p2g( exec_space, pm );
+  p2g( exec_space, pm, properties );
     fieldSolve( exec_space, pm, delta_t, gravity, bc );
     g2p( exec_space, pm, delta_t );
 }
