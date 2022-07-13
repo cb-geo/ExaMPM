@@ -76,11 +76,16 @@ void ExaMPM( const double cell_size, const int ppc, const int halo_size,
     //  Number of cells in each direction 
     std::array<int, 3> global_num_cell = { /*Entity Sets & Mesh input */ };
 
-    // Problem Partition 
+    // Periodic
+    // Move to allow user input
+    std::array<bool, 3> periodic = { /*Json input*/ };
+
+
+    // Problem Partition
+    // Move to allow user input
+    /* Json input */
     int comm_size;
     MPI_Comm_size( MPI_COMM_WORLD, &comm_size );
-    // Right now only partioned in y.
-    // Do we want partions in all three dimensions? 
     //std::array<int, 3> ranks_per_dim = { 1, comm_size, 1 };
     //Cajita::ManualPartitioner partitioner( ranks_per_dim );
 
